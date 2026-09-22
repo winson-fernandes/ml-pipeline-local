@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Batch Prediction - Heart Disease</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>❤️ Heart Disease Prediction</h1>
+            <p>Batch prediction from CSV files</p>
+        </header>
+
+        <nav>
+            <a href="/">Single Prediction</a>
+            <a href="/batch" class="active">Batch/CSV Upload</a>
+        </nav>
+
+        <div class="content">
+            <div class="card">
+                <h2>Upload CSV File</h2>
+                
+                <div class="info-box">
+                    <h3>📋 CSV Format Requirements</h3>
+                    <p>Your CSV file must contain the following columns (in any order):</p>
+                    <div class="column-list">
+                        <span>age</span>
+                        <span>sex</span>
+                        <span>cp</span>
+                        <span>trestbps</span>
+                        <span>chol</span>
+                        <span>fbs</span>
+                        <span>restecg</span>
+                        <span>thalach</span>
+                        <span>exang</span>
+                        <span>oldpeak</span>
+                        <span>slope</span>
+                        <span>ca</span>
+                        <span>thal</span>
+                    </div>
+                    <a href="#" onclick="downloadSample()" class="download-link">📥 Download Sample CSV</a>
+                </div>
+
+                <form id="csvForm">
+                    <div class="upload-area" id="uploadArea">
+                        <input type="file" id="csvFile" name="file" accept=".csv" required>
+                        <div class="upload-text">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="17 8 12 3 7 8"></polyline>
+                                <line x1="12" y1="3" x2="12" y2="15"></line>
+                            </svg>
+                            <p><strong>Click to upload</strong> or drag and drop</p>
+                            <p class="small">CSV files only</p>
+                        </div>
+                        <div id="fileName" class="file-name"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Analyze CSV</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetUpload()">Clear</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="results" class="card result-card" style="display: none;">
+                <h2>Batch Prediction Results</h2>
+                
+                <div id="summary" class="summary-cards"></div>
+                
+                <div class="table-container">
+                    <table id="resultsTable">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>Age</th>
+                                <th>Sex</th>
+                                <th>Prediction</th>
+                                <th>Probability</th>
+                                <th>Risk Level</th>
+                                <th>Interpretation</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsBody"></tbody>
+                    </table>
+                </div>
+
+                <div class="form-actions">
+                    <button class="btn btn-primary" onclick="downloadResults()">📥 Download Results</button>
+                </div>
+            </div>
+
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Processing CSV file...</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>⚠️ This is a prediction tool for educational purposes only. Always consult healthcare professionals.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/batch.js') }}"></script>
+</body>
+</html>

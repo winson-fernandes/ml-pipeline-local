@@ -1,0 +1,185 @@
+name: ML Pipeline
+
+# This workflow runs continuous integration and continuous deployment for
+# the pipeline. Every stage runs as a normal GitHub-hosted runner process.
+# Each job starts on a clean runner with nothing shared between them, so
+# artifacts pass from job to job using actions/upload-artifact and
+# actions/download-artifact.
+#
+# The download and preprocess jobs are also cached by content hash, using
+# actions/cache. When a push only touches training code, for example a
+# change to the hyperparameters, the cached raw and processed data gets
+# restored instead of being downloaded and cleaned again. The train,
+# evaluate, and deploy jobs always run, since retraining is the whole
+# point of triggering the workflow, but they no longer pay for redoing
+# data work that has not changed.
+#
+# To force a fresh download and preprocess, for example after the dataset
+# source changes, bump CACHE_VERSION below.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      epochs:
+        description: 'Training epochs'
+        default: '20'
+
+env:
+  PYTHON_VERSION: '3.10'
+  CACHE_VERSION: 'v1'
+
+jobs:
+  quality:
+    name: 0. Lint and Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - run: pip install -r requirements.txt -r requirements-dev.txt
+      - run: ruff check .
+      - run: pytest
+
+  download:
+    name: 1. Download Data
+    needs: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - name: Restore cached raw data
+        id: cache-raw
+        uses: actions/cache@v4
+        with:
+          path: data/raw
+          key: raw-data-${{ env.CACHE_VERSION }}-${{ hashFiles('src/data/data_download.py', 'src/common/features.py', 'requirements.txt') }}
+      - name: Download dataset (skipped on cache hit)
+        if: steps.cache-raw.outputs.cache-hit != 'true'
+        run: python -m src.data.data_download
+      - uses: actions/upload-artifact@v4
+        with:
+          name: raw-data
+          path: data/raw/
+
+  preprocess:
+    name: 2. Preprocess Data
+    needs: download
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: raw-data
+          path: data/raw/
+      - name: Restore cached processed data
+        id: cache-processed
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/processed
+            models/scalers
+          key: processed-data-${{ env.CACHE_VERSION }}-${{ hashFiles('src/data/data_preprocess.py', 'src/common/features.py', 'requirements.txt') }}-${{ hashFiles('data/raw/*.csv') }}
+      - name: Preprocess data (skipped on cache hit)
+        if: steps.cache-processed.outputs.cache-hit != 'true'
+        run: python -m src.data.data_preprocess
+      - uses: actions/upload-artifact@v4
+        with:
+          name: processed-data
+          path: |
+            data/processed/
+            models/scalers/
+
+  train:
+    name: 3. Train Model
+    needs: preprocess
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+      - run: python -m src.model.model_train --epochs ${{ github.event.inputs.epochs || '20' }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: trained-model
+          path: models/output/
+
+  evaluate:
+    name: 4. Evaluate Model
+    needs: [preprocess, train]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+      - uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: models/output/
+      - run: python -m src.evaluation.model_evaluate
+      - uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-report
+          path: evaluation/
+
+  deploy:
+    name: 5. Deploy Model and Smoke Test
+    needs: [train, evaluate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+      - run: pip install -r requirements.txt
+      - uses: actions/download-artifact@v4
+        with:
+          name: processed-data
+      - uses: actions/download-artifact@v4
+        with:
+          name: trained-model
+          path: models/output/
+      - run: python -m src.deployment.model_deploy
+      - name: Start the local model server and smoke test it
+        run: |
+          python -m src.serving.serve &
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:8080/health > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -sf http://localhost:8080/health
+          echo
+          curl -sf -X POST http://localhost:8080/predict \
+            -H "Content-Type: application/json" \
+            -d '{"features": [63, 1, 3, 145, 233, 1, 0, 150, 0, 2.3, 0, 0, 1, 9.135, 3.698, 2.381, 0, 1, 0]}'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: deployed-model
+          path: models/registry/latest/

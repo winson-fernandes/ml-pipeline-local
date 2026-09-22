@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Prediction</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>❤️ Heart Disease Prediction</h1>
+            <p>AI-powered heart disease risk assessment</p>
+        </header>
+
+        <nav>
+            <a href="/" class="active">Single Prediction</a>
+            <a href="/batch">Batch/CSV Upload</a>
+        </nav>
+
+        <div class="content">
+            <div class="card">
+                <h2>Patient Information</h2>
+                <form id="predictionForm">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="age">Age (years)</label>
+                            <input type="number" id="age" name="age" required min="1" max="120" value="63">
+                            <small>Patient's age</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="sex">Sex</label>
+                            <select id="sex" name="sex" required>
+                                <option value="1">Male</option>
+                                <option value="0">Female</option>
+                            </select>
+                            <small>Biological sex</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="cp">Chest Pain Type</label>
+                            <select id="cp" name="cp" required>
+                                <option value="0">Typical Angina</option>
+                                <option value="1">Atypical Angina</option>
+                                <option value="2">Non-Anginal</option>
+                                <option value="3" selected>Asymptomatic</option>
+                            </select>
+                            <small>Type of chest pain</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="trestbps">Resting BP (mm Hg)</label>
+                            <input type="number" id="trestbps" name="trestbps" required min="50" max="250" value="145">
+                            <small>Resting blood pressure</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="chol">Cholesterol (mg/dl)</label>
+                            <input type="number" id="chol" name="chol" required min="100" max="600" value="233">
+                            <small>Serum cholesterol</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="fbs">Fasting Blood Sugar</label>
+                            <select id="fbs" name="fbs" required>
+                                <option value="0">< 120 mg/dl</option>
+                                <option value="1">> 120 mg/dl</option>
+                            </select>
+                            <small>Fasting blood sugar level</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="restecg">Resting ECG</label>
+                            <select id="restecg" name="restecg" required>
+                                <option value="0" selected>Normal</option>
+                                <option value="1">ST-T Abnormality</option>
+                                <option value="2">LV Hypertrophy</option>
+                            </select>
+                            <small>Resting ECG results</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="thalach">Max Heart Rate</label>
+                            <input type="number" id="thalach" name="thalach" required min="50" max="250" value="150">
+                            <small>Maximum heart rate achieved</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="exang">Exercise Induced Angina</label>
+                            <select id="exang" name="exang" required>
+                                <option value="0" selected>No</option>
+                                <option value="1">Yes</option>
+                            </select>
+                            <small>Angina during exercise</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="oldpeak">ST Depression</label>
+                            <input type="number" id="oldpeak" name="oldpeak" required step="0.1" min="0" max="10" value="2.3">
+                            <small>ST depression (exercise vs rest)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="slope">ST Slope</label>
+                            <select id="slope" name="slope" required>
+                                <option value="0" selected>Upsloping</option>
+                                <option value="1">Flat</option>
+                                <option value="2">Downsloping</option>
+                            </select>
+                            <small>Slope of peak exercise ST</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="ca">Major Vessels</label>
+                            <select id="ca" name="ca" required>
+                                <option value="0" selected>0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                            </select>
+                            <small>Vessels colored by fluoroscopy</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="thal">Thalassemia</label>
+                            <select id="thal" name="thal" required>
+                                <option value="1" selected>Normal</option>
+                                <option value="2">Fixed Defect</option>
+                                <option value="3">Reversible Defect</option>
+                            </select>
+                            <small>Thalassemia type</small>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">Predict Risk</button>
+                        <button type="button" class="btn btn-secondary" onclick="resetForm()">Reset</button>
+                    </div>
+                </form>
+            </div>
+
+            <div id="results" class="card result-card" style="display: none;">
+                <h2>Prediction Results</h2>
+                <div id="resultContent"></div>
+            </div>
+
+            <div id="loading" class="loading" style="display: none;">
+                <div class="spinner"></div>
+                <p>Analyzing patient data...</p>
+            </div>
+        </div>
+
+        <footer>
+            <p>⚠️ This is a prediction tool for educational purposes only. Always consult healthcare professionals.</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

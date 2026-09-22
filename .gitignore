@@ -1,0 +1,25 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# These are generated data and model artifacts, recreated by running the pipeline.
+data/raw/*
+data/processed/*
+models/output/*
+models/scalers/*
+models/registry/latest/*
+evaluation/*
+monitoring/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!models/output/.gitkeep
+!models/scalers/.gitkeep
+!models/registry/latest/.gitkeep
+!evaluation/.gitkeep
+!monitoring/.gitkeep
+
+.idea/
+.vscode/
+*.log
+.claude/

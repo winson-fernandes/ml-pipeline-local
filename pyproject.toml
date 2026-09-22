@@ -1,0 +1,11 @@
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+exclude = ["frontend-app/frontend"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
