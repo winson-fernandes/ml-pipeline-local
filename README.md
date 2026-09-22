@@ -198,7 +198,7 @@ Or use the CLI client, which builds that payload for you:
 python -m src.inference.predict --features '[63,1,3,145,233,1,0,150,0,2.3,0,0,1,9.135,3.698,2.381,0,1,0]'
 ```
 
-Or on UI: once "make serve" or "python -m src.serving.serve" is executed, go to the option under /predict and set the "Parameters" option and set the features to "
+Or on UI: once "make serve" or "python -m src.serving.serve" is executed, start the UI with 127.0.0.1/docs and go to predict option under /predict and set the "Parameters" option and set the features to "
 
 {
   "features": [63,1,3,145,233,1,0,150,0,2.3,0,0,1,9.135,3.698,2.381,0,1,0]
