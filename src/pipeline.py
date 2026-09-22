@@ -69,13 +69,28 @@ def run_pipeline(args):
     if args.deploy:
         logger.info("\n>>> STEP 5/5: Deploy model (promote to local registry)")
         model_deploy.deploy(model_dir=train_args.model_dir)
-        logger.info("\nStart the local model server with: python -m src.serving.serve")
     else:
         logger.info("\n>>> STEP 5/5: Deploy model (skipped)")
 
     logger.info("\n" + "#" * 70)
     logger.info("# PIPELINE COMPLETE")
     logger.info("#" * 70)
+
+    logger.info("\nNext steps:")
+    if args.deploy:
+        logger.info("  1. Start the model server (keep this running in its own terminal):")
+        logger.info("       python -m src.serving.serve")
+        logger.info("  2. In a second terminal, ask it for a prediction:")
+        logger.info("       python -m src.inference.predict --features "
+                     "'[63,1,3,145,233,1,0,150,0,2.3,0,0,1,9.135,3.698,2.381,0,1,0]'")
+        logger.info("  3. Review the confusion matrix and ROC curve in: evaluation/")
+        logger.info("  4. After the server has answered a few predictions, check for drift:")
+        logger.info("       python -m src.monitoring.monitor_pipeline")
+    else:
+        logger.info("  Deploy was skipped (--no-deploy), so nothing is being served yet.")
+        logger.info("  Review the confusion matrix and ROC curve in: evaluation/")
+        logger.info("  To deploy this run later:")
+        logger.info(f"       python -m src.deployment.model_deploy --model-dir {train_args.model_dir}")
 
 
 def main():

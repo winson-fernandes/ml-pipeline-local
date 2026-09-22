@@ -12,12 +12,15 @@ import os
 import sys
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
+from typing import List
 
-from fastapi import FastAPI, HTTPException, Request, Response
+import numpy as np
+from fastapi import FastAPI, HTTPException, Response
+from pydantic import BaseModel
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 from src.common.paths import MODELS_REGISTRY_LATEST_DIR, MONITORING_DIR, ensure_dirs
-from src.inference.inference import format_response, load_model, parse_request, predict
+from src.inference.inference import format_response, load_model, predict
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -46,6 +49,10 @@ async def lifespan(app: FastAPI):
 app = FastAPI(title="Heart Disease Local Model Server", version="1.0.0", lifespan=lifespan)
 
 
+class PredictRequest(BaseModel):
+    features: List[float]
+
+
 @app.get("/health")
 def health():
     """Check whether a model is loaded and ready to serve predictions."""
@@ -55,20 +62,19 @@ def health():
 
 
 @app.post("/predict")
-async def predict_endpoint(request: Request):
+async def predict_endpoint(payload: PredictRequest):
     """Run a prediction. The request body must contain a features list of 19 floats."""
     if _model is None:
         raise HTTPException(status_code=503, detail="Model not loaded. Deploy a model first.")
 
-    body = await request.body()
     try:
-        input_data = parse_request(body, "application/json")
+        input_data = np.array(payload.features, dtype=np.float32)
         result = predict(input_data, _model, _scaler)
     except Exception as e:
         logger.error(f"Prediction error: {e}")
         raise HTTPException(status_code=400, detail=str(e))
 
-    _log_prediction(json.loads(body.decode()), result)
+    _log_prediction(payload.model_dump(), result)
 
     return Response(content=format_response(result, "application/json"), media_type="application/json")
 
